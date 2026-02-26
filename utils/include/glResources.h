@@ -3,6 +3,7 @@
 
 // #include <QOpenGLExtraFunctions>
 #include <QOpenGLFunctions_4_5_Core>
+// #include <QOpenGLFunctions_3_3_Core>
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLTexture>
@@ -37,14 +38,19 @@ public:
     GLResources& operator=(GLResources&&) = delete;
 
     void initialize(QOpenGLFunctions_4_5_Core* glFunc);
+    // void initialize(QOpenGLFunctions_3_3_Core* glFunc);
     void destroy();
 
-    void bind();
+    void bindTriVAO();
+    void bindLineVAO();
     void release();
 
-    void createVAO();
+    void createTriVAO();
+    void createLineVAO();
     void createVBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage);
-    void createEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage);
+    void bindVBO();
+    void createTriEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage);
+    void createLineEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage);
     void setAttributeBuffer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
     void enableAttributeArray(GLuint index);
     void drawElements(GLenum mode, GLsizei count, GLenum type, const void *indices);
@@ -64,11 +70,13 @@ public:
     void generateMipmaps(const QString& name);
 
 private:
-    QOpenGLVertexArrayObject m_vao;
-    QOpenGLBuffer m_vbo{QOpenGLBuffer::VertexBuffer};
-    QOpenGLBuffer m_ebo{QOpenGLBuffer::IndexBuffer};
+    QOpenGLVertexArrayObject m_TriVao, m_LineVao;
+    QOpenGLBuffer m_Vbo{QOpenGLBuffer::VertexBuffer};
+    QOpenGLBuffer m_TriEbo{QOpenGLBuffer::IndexBuffer};
+    QOpenGLBuffer m_LineEbo{QOpenGLBuffer::IndexBuffer};
     QMap<QString, QOpenGLTexture*> m_textures;
     QOpenGLFunctions_4_5_Core* m_glFunc = nullptr;
+    // QOpenGLFunctions_3_3_Core* m_glFunc = nullptr;
 };
 
 #endif

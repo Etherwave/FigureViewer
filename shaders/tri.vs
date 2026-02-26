@@ -10,13 +10,20 @@ uniform float minValue;
 uniform float maxValue;
 uniform vec3 minColor;
 uniform vec3 maxColor;
+uniform int paintMode;
+uniform mat4 projection;
 
 out vec3 outColor;
 
 void main()
 {
     gl_Position = vec4((inPos.x - minX) / (maxX - minX) * 2.0 - 1.0, (inPos.y - minY) / (maxY - minY) * 2.0 - 1.0, 0.0, 1.0);
+    gl_Position = projection * gl_Position;
     // gl_Position = vec4(inPos.x, inPos.y, 0.0, 1.0);
-    outColor = mix(minColor, maxColor, (inValue - minValue) / (maxValue - minValue));
+    if (paintMode == 0) {
+        outColor = mix(minColor, maxColor, (inValue - minValue) / (maxValue - minValue));
+    } else {
+        outColor = vec3(0.0, 0.0, 0.0);
+    }
     // outColor = maxColor;
 }

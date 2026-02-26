@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.1)
 
-set(PROJECT_NAME "qt_opengl")
+set(PROJECT_NAME "FigureViewer")
 set(PROJECT_VERSION "1.0.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
@@ -23,10 +23,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/qt.cmake)
 # 给auto.cmake 传参
 
 #set(LOCAL_SUBDIR engine gui)
-set(LOCAL_TARGET  qt_opengl)  # 目标名
+set(LOCAL_TARGET  PadViewer)  # 目标名
 set(LOCAL_TYPE    EXECUTABLE)     # EXECUTABLE | SHARED | STATIC
 # set(LOCAL_SUBDIR    widgets)
-set(LOCAL_INC_DIR    utils)
+set(LOCAL_INC_DIR    utils ${QT_INCLUDE_DIR})
 set(LOCAL_LIB_DIR    ${QT_LIBS} utils) # glfw3 opengl32 gdi32user32 shell32
 # set(LOCAL_WIN32_GUI TRUE)         # 想隐藏控制台就设 TRUE
 

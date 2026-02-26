@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <ostream>
+#include <QDebug>
 
 
 GLResources::GLResources() {
@@ -14,71 +15,111 @@ GLResources::~GLResources() {
 }
 
 void GLResources::initialize(QOpenGLFunctions_4_5_Core* glFunc) {
+// void GLResources::initialize(QOpenGLFunctions_3_3_Core* glFunc) {
     std::cout << "GLResources::initialize()" << std::endl;
     m_glFunc = glFunc;
-    m_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_ebo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_Vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_TriEbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_LineEbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
 }
 
 void GLResources::destroy() {
     deleteAllTextures();  // 确保删除所有纹理
-    // 添加保护：已经清理过就不再执行
-    if (!m_vao.isCreated()) {
-        return;
-    }
     // 2. 释放EBO（必须在VAO之前，但VAO不"拥有"EBO，只是记录绑定状态）
-    if (m_ebo.isCreated()) {
-        m_ebo.destroy();
+    if (m_TriEbo.isCreated()) {
+        m_TriEbo.destroy();
+    }
+    if (m_LineEbo.isCreated()) {
+        m_LineEbo.destroy();
     }
     // 3. 释放VBO
-    if (m_vbo.isCreated()) {
-        m_vbo.destroy();
+    if (m_Vbo.isCreated()) {
+        m_Vbo.destroy();
     }
     // 4. 最后释放VAO
-    if (m_vao.isCreated()) {
-        m_vao.destroy();
+    if (m_TriVao.isCreated()) {
+        m_TriVao.destroy();
+    }
+    if (m_LineVao.isCreated()) {
+        m_LineVao.destroy();
     }
 }
 
-void GLResources::bind() {
-    qDebug() << "GLResources::bind()";
-    if (m_vao.isCreated()) {
-        m_vao.bind();
+void GLResources::bindTriVAO() {
+    qDebug() << "GLResources::bindTriVAO()";
+    if (m_TriVao.isCreated()) {
+        m_TriVao.bind();
     }
-    qDebug() << "GLResources::bind() done";
+    qDebug() << "GLResources::bindTriVAO() done";
+}
+
+void GLResources::bindLineVAO() {
+    qDebug() << "GLResources::bindLineVAO()";
+    if (m_LineVao.isCreated()) {
+        m_LineVao.bind();
+    }
+    qDebug() << "GLResources::bindLineVAO() done";
 }
 
 void GLResources::release() {
-    if (m_vao.isCreated()) {
-        m_vao.release();
+    if (m_TriVao.isCreated()) {
+        m_TriVao.release();
+    }
+    if (m_LineVao.isCreated()) {
+        m_LineVao.release();
     }
 }
 
-void GLResources::createVAO() {
+void GLResources::createTriVAO() {
     std::cout << "GLResources::createVAO()" << std::endl;
-    if (!m_vao.isCreated()) {
-        m_vao.create();
+    if (!m_TriVao.isCreated()) {
+        m_TriVao.create();
+    }
+}
+
+void GLResources::createLineVAO() {
+    std::cout << "GLResources::createVAO()" << std::endl;
+    if (!m_LineVao.isCreated()) {
+        m_LineVao.create();
     }
 }
 
 void GLResources::createVBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage) {
     std::cout << "GLResources::createVBO()" << std::endl;
-    if (!m_vbo.isCreated()) {
-        m_vbo.create();
-        m_vbo.setUsagePattern(usage);
+    if (!m_Vbo.isCreated()) {
+        m_Vbo.create();
+        m_Vbo.setUsagePattern(usage);
     }
-    m_vbo.bind();
-    m_vbo.allocate(data, size);
+    m_Vbo.bind();
+    m_Vbo.allocate(data, size);
 }
 
-void GLResources::createEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage) {
-    std::cout << "GLResources::createEBO()" << std::endl;
-    if (!m_ebo.isCreated()) {
-        m_ebo.create();
-        m_ebo.setUsagePattern(usage);
+void GLResources::bindVBO() {
+    if (!m_Vbo.isCreated()) {
+        qDebug() << "bindVBO failed";
+        return;
     }
-    m_ebo.bind();
-    m_ebo.allocate(data, size);
+    m_Vbo.bind();
+}
+
+void GLResources::createTriEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage) {
+    std::cout << "GLResources::createTriEBO()" << std::endl;
+    if (!m_TriEbo.isCreated()) {
+        m_TriEbo.create();
+        m_TriEbo.setUsagePattern(usage);
+    }
+    m_TriEbo.bind();
+    m_TriEbo.allocate(data, size);
+}
+
+void GLResources::createLineEBO(GLsizeiptr size, const void* data, QOpenGLBuffer::UsagePattern usage) {
+    std::cout << "GLResources::createLineEBO()" << std::endl;
+    if (!m_LineEbo.isCreated()) {
+        m_LineEbo.create();
+        m_LineEbo.setUsagePattern(usage);
+    }
+    m_LineEbo.bind();
+    m_LineEbo.allocate(data, size);
 }
 
 void GLResources::setAttributeBuffer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) {
