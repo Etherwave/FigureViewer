@@ -21,7 +21,12 @@ protected:
     virtual void initializeGL();
     virtual void resizeGL(int w, int h);
     virtual void paintGL();
+private:
     /* 鼠标事件处理 */
+    QMatrix4x4 getViewMatrix();
+    QPointF screenToNDC(const QPoint& screenPos);
+    QPointF screenToWorldNDC(const QPoint& screenPos, float zoomLevel, const QPointF& cameraNDCOffset);
+    QPointF getCameraNDCOffset(const QPointF& ndcPos, const QPointF &worldNDCPos, float zoomLevel);
     virtual void wheelEvent(QWheelEvent *event);  // 滚轮缩放
     virtual void mousePressEvent(QMouseEvent *event);  // 鼠标按下事件
     virtual void mouseMoveEvent(QMouseEvent *event);  // 鼠标移动事件
@@ -32,20 +37,14 @@ protected:
     public slots:
 
 private:
-    /* 根据鼠标位置计算缩放后的偏移，实现以鼠标为中心缩放 */
-    QPointF screenToWorld(const QPoint &screenPos);
-    void applyZoomAtPoint(float delta, const QPoint &mousePos);
-    QMatrix4x4 getViewMatrix();     // 获取包含缩放的视图矩阵
-private:
-    /* 缩放相关参数 */
-    QPointF _cameraOffset{0, 0};  // 相机偏移，用于实现以鼠标为中心缩放
+    QPointF _cameraNDCOffset{0, 0};  // 拖动时的偏移量
     float _zoomLevel = 1.0f;        // 当前缩放级别
     float _zoomSensitivity = 0.1f;  // 缩放灵敏度 (0.0 - 1.0)
     float _minZoom = 0.1f;          // 最小缩放限制
     float _maxZoom = 10.0f;         // 最大缩放限制
     /* 鼠标拖动相关参数 */
-    bool m_isDragging = false;  // 是否正在拖动
-    QPointF m_lastMousePos;      // 上次鼠标位置
+    bool _isDragging = false;  // 是否正在拖动
+    QPointF _mouseWorldNDCPos;      // 上次鼠标位置
 
     Shader _shader;
     GLResources _glResources;

@@ -214,101 +214,69 @@ void FoxOpenGLWidget::paintGL()
     _glResources.release();
 }
 
-/* ============================================
- * 核心功能：鼠标滚轮缩放
- * ============================================ */
-
-void FoxOpenGLWidget::wheelEvent(QWheelEvent *event)
-{
-    // 获取滚轮增量，向上滚动为正值，向下为负值
-    float delta = event->angleDelta().y() / 120.0f;  // 标准化为步数
-
-    // 应用缩放
-    applyZoomAtPoint(delta, event->position().toPoint());
-
-    // 触发重绘
-    update();
-
-    // 接受事件，阻止传递给父控件
-    event->accept();
-}
-// 替换 applyZoomAtPoint 函数：
-void FoxOpenGLWidget::applyZoomAtPoint(float delta, const QPoint &mousePos)
-{
-    float zoomFactor = 1.0f + (delta * _zoomSensitivity);
-    float newZoom = qBound(_minZoom, _zoomLevel * zoomFactor, _maxZoom);
-
-    if (qFuzzyCompare(newZoom, _zoomLevel)) return;
-
-    // 将鼠标位置转换为世界坐标（考虑当前缩放和偏移）
-    QPointF mouseWorldBefore = screenToWorld(mousePos);
-
-    // 更新缩放
-    _zoomLevel = newZoom;
-
-    // 将同一屏幕位置转换为新的世界坐标
-    QPointF mouseWorldAfter = screenToWorld(mousePos);
-
-    // 调整偏移，使鼠标指向的世界坐标保持不变
-    _cameraOffset += (mouseWorldAfter - mouseWorldBefore);
-
-    update();
+QMatrix4x4 FoxOpenGLWidget::getViewMatrix() {
+    QMatrix4x4 projection;
+    QPointF shift = -_cameraNDCOffset * _zoomLevel;
+    projection.translate(shift.x(), shift.y());
+    projection.scale(_zoomLevel);
+    return projection;
 }
 
-QPointF FoxOpenGLWidget::screenToWorld(const QPoint &screenPos)
-{
+QPointF FoxOpenGLWidget::screenToNDC(const QPoint &screenPos) {
     int w = width();
     int h = height();
 
     // 屏幕坐标 -> NDC (-1 到 1)
     float ndcX = (2.0f * screenPos.x()) / w - 1.0f;
     float ndcY = 1.0f - (2.0f * screenPos.y()) / h;
-
-    // NDC -> 世界坐标 (逆变换)
-    QPointF worldPos;
-    worldPos.setX(ndcX / _zoomLevel - _cameraOffset.x());
-    worldPos.setY(ndcY / _zoomLevel - _cameraOffset.y());
-
-    return worldPos;
+    return QPointF(ndcX, ndcY);
 }
 
-QMatrix4x4 FoxOpenGLWidget::getViewMatrix()
-{
-    QMatrix4x4 view;
-    view.setToIdentity();
-    view.translate(_cameraOffset.x(), _cameraOffset.y());
-    view.scale(_zoomLevel);
-    return view;
+QPointF FoxOpenGLWidget::screenToWorldNDC(const QPoint &screenPos, float zoomLevel, const QPointF &cameraNDCOffset) {
+    QPointF ndcPos = screenToNDC(screenPos);
+    // NDC -> worldNDC
+    QPointF worldNDCPos = ndcPos / zoomLevel + cameraNDCOffset;
+    return worldNDCPos;
 }
 
+QPointF FoxOpenGLWidget::getCameraNDCOffset(const QPointF& ndcPos, const QPointF &worldNDCPos, float zoomLevel) {
+    return worldNDCPos - ndcPos / zoomLevel;
+}
 
-// 实现三个鼠标事件处理函数
-void FoxOpenGLWidget::mousePressEvent(QMouseEvent *event)
-{
+void FoxOpenGLWidget::wheelEvent(QWheelEvent *event) {
+    // 获取滚轮增量，向上滚动为正值，向下为负值
+    float delta = event->angleDelta().y() / 120.0f;  // 标准化为步数
+
+    float zoomFactor = 1.0f + (delta * _zoomSensitivity);
+    float newZoom = qBound(_minZoom, _zoomLevel * zoomFactor, _maxZoom);
+    if (qFuzzyCompare(newZoom, _zoomLevel)) return;
+
+    QPointF ndcPos = screenToNDC(event->position().toPoint());
+    QPointF worldNDCPos = screenToWorldNDC(event->position().toPoint(), _zoomLevel, _cameraNDCOffset);
+    _cameraNDCOffset = getCameraNDCOffset(ndcPos, worldNDCPos, newZoom);
+    _zoomLevel = newZoom;
+    update();
+    event->accept();
+}
+
+void FoxOpenGLWidget::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
-        m_isDragging = true;
-        m_lastMousePos = screenToWorld(event->pos());;
-        event->accept();
+        _isDragging = true;
+        _mouseWorldNDCPos = screenToWorldNDC(event->position().toPoint(), _zoomLevel, _cameraNDCOffset);
     }
 }
 
-void FoxOpenGLWidget::mouseMoveEvent(QMouseEvent *event)
-{
-    if (m_isDragging) {
-        QPointF currentMousePos = screenToWorld(event->pos());
-        // QPointF delta = currentMousePos - m_lastMousePos;
-        _cameraOffset += (currentMousePos - m_lastMousePos);
-
-        m_lastMousePos = currentMousePos;
+void FoxOpenGLWidget::mouseMoveEvent(QMouseEvent *event) {
+    if (_isDragging && (event->buttons() & Qt::LeftButton)) {
+        QPointF ndcPos = screenToNDC(event->position().toPoint());
+        _cameraNDCOffset = getCameraNDCOffset(ndcPos, _mouseWorldNDCPos, _zoomLevel);
         update();
-        event->accept();
     }
 }
-
 void FoxOpenGLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        m_isDragging = false;
-        event->accept();
+        _isDragging = false;
+        _mouseWorldNDCPos = screenToWorldNDC(event->position().toPoint(), _zoomLevel, _cameraNDCOffset);
     }
 }
